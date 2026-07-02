@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cessna 172M · Carrera de Despegue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12181a;
+    --panel:#1b2422;
+    --panel-2:#212b28;
+    --line:#39443f;
+    --amber:#ffb300;
+    --amber-dim:#8a6416;
+    --green:#6fcf7c;
+    --red:#e6584f;
+    --paper:#ece7d8;
+    --muted:#8a9591;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top, #1a2321 0%, var(--bg) 55%),
+      var(--bg);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 60px 0;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 20px;}
+
+  /* ---------- HEADER ---------- */
+  header{
+    padding:28px 20px 18px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,179,0,0.05), transparent);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:11px;
+    color:var(--amber);
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .eyebrow::before{content:"";width:6px;height:6px;background:var(--amber);border-radius:50%;box-shadow:0 0 8px var(--amber);}
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,5vw,42px);
+    margin:6px 0 4px;
+    letter-spacing:.01em;
+    text-transform:uppercase;
+  }
+  .sub{color:var(--muted);font-size:14px;max-width:60ch;line-height:1.5;}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .chip{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--paper);
+    border:1px solid var(--line);
+    background:var(--panel);
+    padding:6px 10px;
+    border-radius:3px;
+    letter-spacing:.03em;
+  }
+  .chip b{color:var(--amber);font-weight:600;}
+
+  /* ---------- RUNWAY VISUALIZATION (signature) ---------- */
+  .runway-section{padding:28px 20px 10px;}
+  .runway-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:22px 22px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .runway-card::before{
+    content:"FIG. 5-4 · SHEET 1 OF 2";
+    position:absolute;
+    top:10px;right:14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:var(--muted);
+    letter-spacing:.1em;
+  }
+  .readouts{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:20px;}
+  .readout{flex:1;min-width:180px;}
+  .readout .label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  .readout .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:clamp(34px,7vw,52px);
+    font-weight:600;
+    color:var(--amber);
+    line-height:1.05;
+    text-shadow:0 0 18px rgba(255,179,0,.25);
+  }
+  .readout .value small{font-size:16px;color:var(--muted);font-weight:400;margin-left:4px;}
+  .readout.total .value{color:var(--green);text-shadow:0 0 18px rgba(111,207,124,.25);}
+  .readout .subvalue{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--muted);margin-top:4px;
+  }
+
+  .track{
+    position:relative;
+    height:130px;
+    border-radius:4px;
+    background:
+      repeating-linear-gradient(115deg, #262f2b 0 14px, #232b27 14px 28px);
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .sky{position:absolute;inset:0;bottom:38px;background:linear-gradient(180deg,#0f1a1d,#182422);}
+  .ground{position:absolute;left:0;right:0;bottom:0;height:38px;background:repeating-linear-gradient(90deg,#3a3f3a 0 2px, transparent 2px 22px), #23302c;border-top:2px dashed #56605a;}
+  .fence{
+    position:absolute;bottom:38px;
+    width:3px;height:34px;
+    background:var(--red);
+    transition:left .5s ease;
+  }
+  .fence::after{
+    content:"50 FT";
+    position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--red);white-space:nowrap;
+  }
+  .liftmark{
+    position:absolute;bottom:38px;
+    width:2px;height:14px;background:var(--amber);
+    transition:left .5s ease;
+  }
+  .plane{
+    position:absolute;
+    width:34px;height:34px;
+    transition:left .5s ease, bottom .5s ease, transform .5s ease;
+    transform-origin:center;
+    filter:drop-shadow(0 0 6px rgba(255,179,0,.5));
+  }
+  .plane svg{width:100%;height:100%;}
+  .arc-path{
+    position:absolute;bottom:38px;height:60px;
+    border-top:1px dashed var(--amber-dim);
+    border-radius:0 40px 0 0;
+    transition:left .5s ease, width .5s ease;
+    pointer-events:none;
+  }
+  .segment-labels{
+    display:flex;justify-content:space-between;
+    margin-top:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--muted);
+  }
+
+  .warning{
+    margin-top:14px;
+    padding:10px 12px;
+    border:1px solid var(--red);
+    background:rgba(230,88,79,.08);
+    color:#ffb3af;
+    font-size:13px;
+    border-radius:4px;
+    display:none;
+    line-height:1.5;
+  }
+  .warning.show{display:block;}
+
+  /* ---------- CONTROLS ---------- */
+  .panel-title{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-size:13px;
+    color:var(--muted);
+    margin:34px 20px 12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .panel-title::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  .controls{
+    padding:0 20px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  @media (max-width:560px){.controls{grid-template-columns:1fr;}}
+
+  .field{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:14px 16px 16px;
+  }
+  .field label{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:8px;
+  }
+  .field label .cur{color:var(--amber);font-size:13px;font-weight:600;}
+  input[type="range"]{
+    width:100%;appearance:none;height:4px;border-radius:2px;
+    background:var(--line);outline:none;margin:6px 0 2px;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--amber);cursor:pointer;border:3px solid #12181a;
+    box-shadow:0 0 0 1px var(--amber);
+  }
+  input[type="number"]{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:14px;
+    padding:8px 10px;border-radius:4px;margin-top:4px;
+  }
+  input[type="number"]:focus, input[type="range"]:focus{outline:2px solid var(--amber);outline-offset:2px;}
+  .range-ticks{display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+  .toggle-row{display:flex;gap:8px;margin-top:4px;}
+  .toggle-btn{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:9px 6px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .toggle-btn.active{
+    background:rgba(255,179,0,.12);
+    border-color:var(--amber);
+    color:var(--amber);
+  }
+  .toggle-btn:hover{border-color:var(--amber-dim);}
+  .field.full{grid-column:1/-1;}
+
+  /* ---------- BREAKDOWN ---------- */
+  .breakdown{
+    margin:20px 20px 0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .breakdown-row{
+    display:grid;
+    grid-template-columns:28px 1fr auto auto;
+    gap:12px;
+    align-items:center;
+    padding:12px 16px;
+    border-bottom:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+  }
+  .breakdown-row:last-child{border-bottom:none;}
+  .breakdown-row .num{
+    color:var(--amber);font-weight:600;
+    width:24px;height:24px;border:1px solid var(--amber-dim);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11px;
+  }
+  .breakdown-row .desc{color:var(--paper);}
+  .breakdown-row .desc span{color:var(--muted);display:block;font-size:11px;margin-top:2px;}
+  .breakdown-row .vals{color:var(--muted);text-align:right;white-space:nowrap;}
+  .breakdown-row .vals b{color:var(--paper);}
+
+  /* ---------- NOTES ---------- */
+  .notes{
+    margin:24px 20px 0;
+    padding:16px 18px;
+    border-left:2px solid var(--amber-dim);
+    background:var(--panel);
+    border-radius:0 6px 6px 0;
+  }
+  .notes h3{
+    font-family:'Oswald',sans-serif;font-size:13px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--amber);margin:0 0 8px;
+  }
+  .notes ol{margin:0;padding-left:18px;color:var(--muted);font-size:12.5px;line-height:1.7;}
+  .notes li::marker{color:var(--amber-dim);}
+
+  .tank-wrap{margin-top:8px;}
+  .tank-labels{
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);
+    margin:6px 0;
+  }
+  .tank-bar{
+    height:14px;border-radius:7px;
+    background:var(--panel-2);border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .tank-fill{
+    height:100%;width:0%;
+    background:linear-gradient(90deg, var(--amber-dim), var(--amber));
+    transition:width .5s ease, background .3s ease;
+  }
+  .tank-fill.over{background:linear-gradient(90deg, #8a2c27, var(--red));}
+
+  footer{
+    text-align:center;color:var(--muted);font-size:11px;
+    margin-top:30px;font-family:'IBM Plex Mono',monospace;
+    letter-spacing:.04em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Cessna 172M · Manual de Vuelo · Sección 5</div>
+    <h1>Despegue &amp; Combustible</h1>
+    <p class="sub">Calculadoras interactivas: distancia de despegue (Figura 5-4 del POH) y combustible requerido según tiempo de vuelo y consumo (GPH).</p>
+    <div class="chips">
+      <div class="chip">Peso fijo <b>2300 LBS</b></div>
+      <div class="chip">Rotación <b>52 KIAS</b></div>
+      <div class="chip">A 50 FT <b>59 KIAS</b></div>
+      <div class="chip">Flaps <b>UP</b> · Mezcla <b>máx. RPM</b></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="runway-section">
+    <div class="runway-card">
+      <div class="readouts">
+        <div class="readout">
+          <div class="label">Carrera en tierra</div>
+          <div class="value" id="out-grnd">—<small>m</small></div>
+          <div class="subvalue" id="out-grnd-ft">— ft</div>
+        </div>
+        <div class="readout total">
+          <div class="label">Total para librar obstáculo de 50 ft</div>
+          <div class="value" id="out-total">—<small>m</small></div>
+          <div class="subvalue" id="out-total-ft">— ft</div>
+        </div>
+      </div>
+
+      <div class="track" id="track">
+        <div class="sky"></div>
+        <div class="ground"></div>
+        <div class="arc-path" id="arc"></div>
+        <div class="liftmark" id="liftmark"></div>
+        <div class="fence" id="fence"></div>
+        <div class="plane" id="plane">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L13.5 9H21L14 12.5L16 21L12 17.5L8 21L10 12.5L3 9H10.5L12 2Z" fill="#ffb300"/>
+          </svg>
+        </div>
+      </div>
+      <div class="segment-labels">
+        <span>0 ft</span>
+        <span id="label-lift">rotación</span>
+        <span id="label-end">obstáculo 50 ft</span>
+      </div>
+
+      <div class="warning" id="warning"></div>
+    </div>
+  </section>
+
+  <div class="panel-title">Condiciones</div>
+  <div class="controls">
+    <div class="field">
+      <label>Altitud de presión <span class="cur" id="alt-cur">0 ft</span></label>
+      <input type="range" id="alt" min="0" max="8000" step="100" value="0">
+      <div class="range-ticks"><span>S.L.</span><span>8000 ft</span></div>
+    </div>
+    <div class="field">
+      <label>Temperatura exterior <span class="cur" id="temp-cur">15 °C</span></label>
+      <input type="range" id="temp" min="-10" max="45" step="1" value="15">
+      <div class="range-ticks"><span>-10 °C</span><span>45 °C</span></div>
+    </div>
+
+    <div class="field full">
+      <label>Viento de componente longitudinal</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" data-wind="none">Calma</button>
+        <button class="toggle-btn" data-wind="head">De frente</button>
+        <button class="toggle-btn" data-wind="tail">De cola</button>
+      </div>
+      <input type="number" id="windKt" min="0" max="40" value="0" placeholder="Nudos" style="margin-top:10px;" disabled>
+    </div>
+
+    <div class="field full">
+      <label>Superficie de pista</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" data-surface="paved">Pavimentada, seca</button>
+        <button class="toggle-btn" data-surface="grass">Césped seco</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="breakdown" id="breakdown"></div>
+
+  <div class="notes">
+    <h3>Notas de la tabla (POH Fig. 5-4)</h3>
+    <ol>
+      <li>Técnica de máximo rendimiento según Sección 4. Antes del despegue, empobrecer la mezcla para dar el RPM máximo con acelerador a fondo.</li>
+      <li>Reducir distancias 10% por cada 9 nudos de viento de frente. Con viento de cola de hasta 10 nudos, aumentar distancias 10% por cada 2 nudos.</li>
+      <li>Donde el valor fue eliminado, el rendimiento de ascenso tras despegar es menor a 150 fpm a la velocidad de despegue.</li>
+      <li>Para operación en pista de césped seco, aumentar las distancias en 15% de la cifra de "carrera en tierra".</li>
+    </ol>
+  </div>
+
+  <div class="panel-title">Cálculo de combustible</div>
+
+  <section class="runway-section" style="padding-top:0;">
+    <div class="runway-card">
+      <div class="readouts">
+        <div class="readout">
+          <div class="label">Combustible requerido</div>
+          <div class="value" id="fuel-out">—<small>gal</small></div>
+          <div class="subvalue" id="fuel-out-l">— L</div>
+        </div>
+        <div class="readout total">
+          <div class="label">Tiempo total considerado</div>
+          <div class="value" id="fuel-time-out">—<small>min</small></div>
+          <div class="subvalue" id="fuel-time-out-h">— h</div>
+        </div>
+      </div>
+
+      <div class="tank-wrap">
+        <div class="tank-labels">
+          <span>0 gal</span>
+          <span id="tank-cap-label">Capacidad: — gal</span>
+        </div>
+        <div class="tank-bar"><div class="tank-fill" id="tank-fill"></div></div>
+        <div class="tank-labels"><span id="tank-pct">—% del tanque</span><span id="tank-remain">Restante: — gal</span></div>
+      </div>
+
+      <div class="warning" id="fuel-warning"></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <div class="field">
+      <label>Duración del vuelo</label>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <input type="number" id="fuel-hours" min="0" max="20" value="1" style="margin-top:0;">
+          <div class="range-ticks" style="margin-top:4px;"><span>horas</span></div>
+        </div>
+        <div style="flex:1;">
+          <input type="number" id="fuel-minutes" min="0" max="59" value="0" style="margin-top:0;">
+          <div class="range-ticks" style="margin-top:4px;"><span>minutos</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Consumo <span class="cur" id="gph-cur">7.0 GPH</span></label>
+      <input type="range" id="gph" min="4" max="12" step="0.1" value="7">
+      <div class="range-ticks"><span>4 GPH</span><span>12 GPH</span></div>
+    </div>
+
+    <div class="field full">
+      <label>Reserva de combustible (VFR)</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" data-reserve="0">Sin reserva</button>
+        <button class="toggle-btn" data-reserve="30">Diurna · 30 min</button>
+        <button class="toggle-btn" data-reserve="45">Nocturna · 45 min</button>
+      </div>
+    </div>
+    <div class="field full">
+      <label>Capacidad utilizable del tanque (opcional)</label>
+      <input type="number" id="tank-cap" min="0" value="40" placeholder="Galones">
+    </div>
+  </div>
+
+  <div class="breakdown" id="fuel-breakdown"></div>
+
+  <div class="panel-title">Punto de descenso (TOD)</div>
+
+  <section class="runway-section" style="padding-top:0;">
+    <div class="runway-card">
+      <div class="readouts">
+        <div class="readout total">
+          <div class="label">Distancia antes de iniciar descenso</div>
+          <div class="value" id="tod-out">—<small>NM</small></div>
+        </div>
+        <div class="readout">
+          <div class="label">Tiempo de descenso</div>
+          <div class="value" id="tod-time-out">—<small>min</small></div>
+        </div>
+      </div>
+
+      <div class="warning" id="tod-warning"></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <div class="field">
+      <label>Altura actual <span class="cur" id="tod-alt-cur">6000 ft</span></label>
+      <input type="range" id="tod-alt-actual" min="0" max="18000" step="100" value="6000">
+      <div class="range-ticks"><span>0 ft</span><span>18000 ft</span></div>
+    </div>
+    <div class="field">
+      <label>Altura deseada <span class="cur" id="tod-target-cur">1000 ft</span></label>
+      <input type="range" id="tod-alt-target" min="0" max="18000" step="100" value="1000">
+      <div class="range-ticks"><span>0 ft</span><span>18000 ft</span></div>
+    </div>
+    <div class="field">
+      <label>Velocidad (GS) <span class="cur" id="tod-speed-cur">120 kt</span></label>
+      <input type="range" id="tod-speed" min="40" max="200" step="1" value="120">
+      <div class="range-ticks"><span>40 kt</span><span>200 kt</span></div>
+    </div>
+    <div class="field">
+      <label>Tasa de descenso <span class="cur" id="tod-rate-cur">500 fpm</span></label>
+      <input type="range" id="tod-rate" min="200" max="1500" step="50" value="500">
+      <div class="range-ticks"><span>200 fpm</span><span>1500 fpm</span></div>
+    </div>
+  </div>
+
+  <div class="breakdown" id="tod-breakdown"></div>
+
+</div>
+
+
+<footer>DATOS: CESSNA 172M POH · FIGURA 5-4 (HOJA 1 DE 2) · SOLO REFERENCIA — VERIFICAR CONTRA EL MANUAL OFICIAL ANTES DE VOLAR</footer>
+
+<script>
+const ALTS = [0,1000,2000,3000,4000,5000,6000,7000,8000];
+const TEMPS = [0,10,20,30,40];
+
+// rows = altitude index, cols = temperature index
+const GRND = [
+  [775,835,895,960,1030],
+  [850,915,980,1050,1125],
+  [930,1000,1075,1155,1235],
+  [1020,1100,1180,1270,1360],
+  [1125,1210,1300,1395,1495],
+  [1235,1330,1430,1540,1650],
+  [1365,1470,1580,1700,null],
+  [1505,1625,1750,null,null],
+  [1665,1800,null,null,null]
+];
+const TOTAL = [
+  [1380,1475,1575,1685,1795],
+  [1510,1615,1725,1845,1970],
+  [1650,1770,1895,2030,2170],
+  [1815,1945,2085,2235,2395],
+  [2000,2145,2305,2475,2655],
+  [2210,2375,2555,2750,2960],
+  [2450,2640,2850,3070,null],
+  [2730,2955,3190,null,null],
+  [3065,3320,null,null,null]
+];
+
+function findBracket(arr, v){
+  if(v<=arr[0]) return [0,0];
+  if(v>=arr[arr.length-1]) return [arr.length-1, arr.length-1];
+  for(let i=0;i<arr.length-1;i++){
+    if(v>=arr[i] && v<=arr[i+1]) return [i,i+1];
+  }
+  return [0,0];
+}
+
+function bilinear(table, alt, temp){
+  const [ai0, ai1] = findBracket(ALTS, alt);
+  const [ti0, ti1] = findBracket(TEMPS, temp);
+  const v00 = table[ai0][ti0], v10 = table[ai1][ti0];
+  const v01 = table[ai0][ti1], v11 = table[ai1][ti1];
+  if(v00==null || v10==null || v01==null || v11==null) return null;
+
+  const fa = ai1===ai0 ? 0 : (alt-ALTS[ai0])/(ALTS[ai1]-ALTS[ai0]);
+  const ft = ti1===ti0 ? 0 : (temp-TEMPS[ti0])/(TEMPS[ti1]-TEMPS[ti0]);
+
+  const a0 = v00 + fa*(v10-v00);
+  const a1 = v01 + fa*(v11-v01);
+  return a0 + ft*(a1-a0);
+}
+
+// state
+let state = { alt:0, temp:15, windType:'none', windKt:0, surface:'paved' };
+
+const el = id => document.getElementById(id);
+
+el('alt').addEventListener('input', e=>{ state.alt = +e.target.value; render(); });
+el('temp').addEventListener('input', e=>{ state.temp = +e.target.value; render(); });
+el('windKt').addEventListener('input', e=>{ state.windKt = Math.max(0, +e.target.value||0); render(); });
+
+document.querySelectorAll('[data-wind]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-wind]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.windType = btn.dataset.wind;
+    el('windKt').disabled = (state.windType==='none');
+    if(state.windType==='none'){ state.windKt = 0; el('windKt').value = 0; }
+    render();
+  });
+});
+
+document.querySelectorAll('[data-surface]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-surface]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.surface = btn.dataset.surface;
+    render();
+  });
+});
+
+function fmt(n){ return Math.round(n).toLocaleString('es'); }
+
+function render(){
+  el('alt-cur').textContent = state.alt.toLocaleString('es') + ' ft';
+  el('temp-cur').textContent = state.temp + ' °C';
+
+  const altClamped = Math.min(8000, Math.max(0, state.alt));
+  const tempClamped = Math.min(40, Math.max(0, state.temp));
+
+  const grnd0 = bilinear(GRND, altClamped, tempClamped);
+  const total0 = bilinear(TOTAL, altClamped, tempClamped);
+
+  const warnEl = el('warning');
+  let warnings = [];
+
+  if(state.temp !== tempClamped || state.alt !== altClamped){
+    warnings.push('La tabla cubre 0–8000 ft y 0–40 °C. El valor se calculó usando el límite más cercano de la tabla.');
+  }
+
+  if(grnd0==null || total0==null){
+    warnEl.innerHTML = 'Sin dato en la tabla para esta combinación: el rendimiento de ascenso tras el despegue es menor a 150 fpm (Nota 3). No se publica una distancia de despegue segura.';
+    warnEl.classList.add('show');
+    el('out-grnd').innerHTML = '—<small>m</small>';
+    el('out-total').innerHTML = '—<small>m</small>';
+    el('out-grnd-ft').textContent = '— ft';
+    el('out-total-ft').textContent = '— ft';
+    el('breakdown').innerHTML = '';
+    return;
+  }
+
+  // Paso 1: % de viento = (nudos / 9) x 10   [con cola: nudos / 2 x 10]
+  let windPct = 0;
+  if(state.windType==='head' && state.windKt>0){
+    windPct = (state.windKt/9)*10;
+  } else if(state.windType==='tail' && state.windKt>0){
+    windPct = (state.windKt/2)*10;
+    if(state.windKt>10) warnings.push('El viento de cola ingresado supera el límite de 10 nudos que cubre la tabla; el resultado es una extrapolación.');
+  }
+
+  // Paso 2: corrección = valor de tabla x (% de viento)
+  const corrGrnd = grnd0 * (windPct/100);
+  const corrTotal = total0 * (windPct/100);
+
+  // Paso 3: se resta (frente) o se suma (cola) esa corrección al valor de tabla
+  const sign = state.windType==='tail' ? 1 : -1;
+  const grnd1 = grnd0 + sign*corrGrnd;
+  const total1 = total0 + sign*corrTotal;
+
+  // Paso 4 (opcional): superficie — +15% de la carrera en tierra, mismo incremento absoluto a ambas distancias
+  let increment = 0;
+  if(state.surface==='grass'){
+    increment = grnd1*0.15;
+  }
+  const grnd2 = grnd1+increment;
+  const total2 = total1+increment;
+
+  // Paso 5: conversión a metros ÷ 3.3
+  const grndM = grnd2/3.3;
+  const totalM = total2/3.3;
+
+  warnEl.innerHTML = warnings.join(' ');
+  warnEl.classList.toggle('show', warnings.length>0);
+
+  el('out-grnd').innerHTML = fmt(grndM) + '<small>m</small>';
+  el('out-total').innerHTML = fmt(totalM) + '<small>m</small>';
+  el('out-grnd-ft').textContent = fmt(grnd2) + ' ft';
+  el('out-total-ft').textContent = fmt(total2) + ' ft';
+
+  // breakdown
+  const rows = [
+    {n:1, desc:'Valor de tabla (altitud/temperatura)', sub:altClamped.toLocaleString('es')+' ft · '+tempClamped+' °C', g:fmt(grnd0)+' ft', t:fmt(total0)+' ft'},
+    {n:2, desc:'% de viento', sub: state.windType==='none' ? 'Sin componente longitudinal' : (state.windType==='head'? state.windKt+' kt de frente ÷ 9 × 10' : state.windKt+' kt de cola ÷ 2 × 10'), g:windPct.toFixed(2)+' %', t:windPct.toFixed(2)+' %'},
+    {n:3, desc:'Corrección (valor tabla × % viento)', sub: (sign>0?'se suma':'se resta')+' al valor de tabla', g:fmt(corrGrnd)+' ft', t:fmt(corrTotal)+' ft'},
+    {n:4, desc:'Corrección por superficie', sub: state.surface==='grass' ? 'Césped seco · +15% de la carrera en tierra' : 'Pavimentada, seca · sin corrección', g:fmt(grnd2)+' ft', t:fmt(total2)+' ft'},
+    {n:5, desc:'Conversión a metros', sub:'÷ 3.3', g:fmt(grndM)+' m', t:fmt(totalM)+' m'},
+  ];
+  el('breakdown').innerHTML = rows.map(r=>`
+    <div class="breakdown-row">
+      <div class="num">${r.n}</div>
+      <div class="desc">${r.desc}<span>${r.sub}</span></div>
+      <div class="vals">tierra <b>${r.g}</b></div>
+      <div class="vals">total <b>${r.t}</b></div>
+    </div>
+  `).join('');
+
+  // visualization
+  const liftPct = Math.min(96, (grnd2/total2)*100);
+  const trackWidth = el('track').clientWidth;
+  el('liftmark').style.left = liftPct + '%';
+  el('fence').style.left = 'calc(97% - 3px)';
+  el('arc').style.left = liftPct + '%';
+  el('arc').style.width = (97-liftPct) + '%';
+
+  el('plane').style.left = `calc(${liftPct}% - 17px)`;
+  el('plane').style.bottom = '30px';
+  el('plane').style.transform = 'rotate(45deg)';
+
+  el('label-lift').textContent = 'rotación · '+fmt(grnd2)+' ft';
+  el('label-end').textContent = 'obstáculo 50 ft · '+fmt(total2)+' ft';
+}
+
+render();
+window.addEventListener('resize', render);
+
+// ---------- FUEL CALCULATOR ----------
+let fuelState = { hours:1, minutes:0, gph:7, reserve:0, tankCap:40 };
+
+el('fuel-hours').addEventListener('input', e=>{ fuelState.hours = Math.max(0, +e.target.value||0); renderFuel(); });
+el('fuel-minutes').addEventListener('input', e=>{ fuelState.minutes = Math.max(0, Math.min(59, +e.target.value||0)); renderFuel(); });
+el('gph').addEventListener('input', e=>{ fuelState.gph = +e.target.value; renderFuel(); });
+el('tank-cap').addEventListener('input', e=>{ fuelState.tankCap = Math.max(0, +e.target.value||0); renderFuel(); });
+
+document.querySelectorAll('[data-reserve]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-reserve]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    fuelState.reserve = +btn.dataset.reserve;
+    renderFuel();
+  });
+});
+
+function renderFuel(){
+  el('gph-cur').textContent = fuelState.gph.toFixed(1) + ' GPH';
+
+  // Paso 1: tiempo de vuelo en minutos
+  const flightMin = fuelState.hours*60 + fuelState.minutes;
+  // Paso 2: reserva en minutos
+  const reserveMin = fuelState.reserve;
+  // Paso 3: minutos totales
+  const totalMin = flightMin + reserveMin;
+
+  // Paso 4: minutos x consumo (GPH) / 60 = galones      [ej. 30 x 7 / 60 = 3.5]
+  const flightGal = (flightMin * fuelState.gph) / 60;
+  const reserveGal = (reserveMin * fuelState.gph) / 60;
+  const totalGal = (totalMin * fuelState.gph) / 60;
+
+  el('fuel-out').innerHTML = totalGal.toFixed(1) + '<small>gal</small>';
+  el('fuel-out-l').textContent = fmt(totalGal*3.785) + ' L';
+
+  const th = Math.floor(totalMin/60), tm = Math.round(totalMin%60);
+  el('fuel-time-out').innerHTML = totalMin.toFixed(0) + '<small>min</small>';
+  el('fuel-time-out-h').textContent = th + ' h ' + tm + ' min';
+
+  // tanque
+  const cap = fuelState.tankCap;
+  el('tank-cap-label').textContent = 'Capacidad: ' + (cap>0? cap.toLocaleString('es') : '—') + ' gal';
+  const fuelWarnEl = el('fuel-warning');
+  if(cap>0){
+    const pct = Math.min(999, (totalGal/cap)*100);
+    const fill = el('tank-fill');
+    fill.style.width = Math.min(100,pct) + '%';
+    fill.classList.toggle('over', pct>100);
+    el('tank-pct').textContent = pct.toFixed(0) + '% del tanque';
+    el('tank-remain').textContent = 'Restante: ' + fmt(cap-totalGal) + ' gal';
+    if(pct>100){
+      fuelWarnEl.innerHTML = 'El combustible requerido supera la capacidad utilizable del tanque ingresada.';
+      fuelWarnEl.classList.add('show');
+    } else {
+      fuelWarnEl.classList.remove('show');
+    }
+  } else {
+    el('tank-fill').style.width='0%';
+    el('tank-pct').textContent = '—';
+    el('tank-remain').textContent = 'Restante: — gal';
+    fuelWarnEl.classList.remove('show');
+  }
+
+  const rows = [
+    {n:1, desc:'Tiempo de vuelo', sub:fuelState.hours+' h '+fuelState.minutes+' min', v:flightMin.toFixed(0)+' min'},
+    {n:2, desc:'Reserva VFR', sub: reserveMin===0 ? 'No aplicada' : reserveMin+' min', v:reserveMin+' min'},
+    {n:3, desc:'Tiempo total', sub:'Vuelo + reserva', v:totalMin.toFixed(0)+' min'},
+    {n:4, desc:'Galones = minutos × GPH ÷ 60', sub:totalMin.toFixed(0)+' × '+fuelState.gph.toFixed(1)+' ÷ 60', v:totalGal.toFixed(2)+' gal'},
+  ];
+  el('fuel-breakdown').innerHTML = rows.map(r=>`
+    <div class="breakdown-row" style="grid-template-columns:28px 1fr auto;">
+      <div class="num">${r.n}</div>
+      <div class="desc">${r.desc}<span>${r.sub}</span></div>
+      <div class="vals"><b>${r.v}</b></div>
+    </div>
+  `).join('');
+}
+
+renderFuel();
+
+// ---------- TOD CALCULATOR ----------
+let todState = { altActual:6000, altTarget:1000, speed:120, rate:500 };
+
+el('tod-alt-actual').addEventListener('input', e=>{ todState.altActual = +e.target.value; renderTod(); });
+el('tod-alt-target').addEventListener('input', e=>{ todState.altTarget = +e.target.value; renderTod(); });
+el('tod-speed').addEventListener('input', e=>{ todState.speed = +e.target.value; renderTod(); });
+el('tod-rate').addEventListener('input', e=>{ todState.rate = +e.target.value; renderTod(); });
+
+function renderTod(){
+  el('tod-alt-cur').textContent = todState.altActual.toLocaleString('es') + ' ft';
+  el('tod-target-cur').textContent = todState.altTarget.toLocaleString('es') + ' ft';
+  el('tod-speed-cur').textContent = todState.speed + ' kt';
+  el('tod-rate-cur').textContent = todState.rate + ' fpm';
+
+  const todWarnEl = el('tod-warning');
+  const diff = todState.altActual - todState.altTarget;
+
+  if(diff<=0){
+    todWarnEl.innerHTML = 'La altura actual debe ser mayor a la altura deseada para calcular un descenso.';
+    todWarnEl.classList.add('show');
+    el('tod-out').innerHTML = '—<small>NM</small>';
+    el('tod-time-out').innerHTML = '—<small>min</small>';
+    el('tod-breakdown').innerHTML = '';
+    return;
+  }
+  todWarnEl.classList.remove('show');
+
+  // Paso 1: diferencia de altura (ft)
+  // Paso 2: minutos = diferencia / tasa de descenso
+  const minutos = diff / todState.rate;
+  // Paso 3: millas por minuto = velocidad / 60
+  const milPorMin = todState.speed / 60;
+  // Paso 4: NM = millas por minuto x minutos
+  const nm = milPorMin * minutos;
+
+  el('tod-out').innerHTML = nm.toFixed(1) + '<small>NM</small>';
+  el('tod-time-out').innerHTML = minutos.toFixed(1) + '<small>min</small>';
+
+  const rows = [
+    {n:1, desc:'Diferencia de altura', sub:todState.altActual.toLocaleString('es')+' ft − '+todState.altTarget.toLocaleString('es')+' ft', v:fmt(diff)+' ft'},
+    {n:2, desc:'Minutos = diferencia ÷ tasa de descenso', sub:fmt(diff)+' ÷ '+todState.rate+' fpm', v:minutos.toFixed(2)+' min'},
+    {n:3, desc:'Millas por minuto = velocidad ÷ 60', sub:todState.speed+' kt ÷ 60', v:milPorMin.toFixed(3)+' NM/min'},
+    {n:4, desc:'NM = millas por minuto × minutos', sub:milPorMin.toFixed(3)+' × '+minutos.toFixed(2), v:nm.toFixed(2)+' NM'},
+  ];
+  el('tod-breakdown').innerHTML = rows.map(r=>`
+    <div class="breakdown-row" style="grid-template-columns:28px 1fr auto;">
+      <div class="num">${r.n}</div>
+      <div class="desc">${r.desc}<span>${r.sub}</span></div>
+      <div class="vals"><b>${r.v}</b></div>
+    </div>
+  `).join('');
+}
+
+renderTod();
+</script>
+
+</body>
+</html>
